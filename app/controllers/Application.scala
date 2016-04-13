@@ -4,6 +4,7 @@ import play.api.libs.json._
 import play.api.mvc._
 import models.Book._
 import models.NotificationRequest._
+import example.producer.Producer
 
 object Application extends Controller {
 
@@ -36,6 +37,20 @@ object Application extends Controller {
       },
       notificationRequest => {
         addNotificationRequest(notificationRequest)
+        Ok(Json.obj("status" -> "OK"))
+      }
+    )
+  }
+
+  def sendNotificationRequest = Action(BodyParsers.parse.json) { request =>
+    val b = request.body.validate[NotificationRequest]
+    b.fold(
+      errors => {
+        BadRequest(Json.obj("status" -> "OK", "message" -> JsError.toJson(errors)))
+      },
+      notificationRequest => {
+        val producer = Producer[String]("notification_requests")
+        producer.send(Json.toJson(notificationRequest).toString)
         Ok(Json.obj("status" -> "OK"))
       }
     )
